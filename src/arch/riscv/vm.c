@@ -35,7 +35,7 @@ void vcpu_arch_reset(struct vcpu *vcpu, vaddr_t entry)
     
     CSRW(sscratch, &vcpu->regs);
 
-    vcpu->regs.hstatus = HSTATUS_SPV | HSTATUS_VSXL_64;
+    vcpu->regs.hstatus = HSTATUS_SPV | HSTATUS_VSXL_64 | (((vcpu->id+1) << HSTATUS_VGEIN_OFF) & HSTATUS_VGEIN_MSK);
     vcpu->regs.sstatus = SSTATUS_SPP_BIT | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY;
     vcpu->regs.sepc = entry;
     vcpu->regs.a0 = vcpu->arch.hart_id = vcpu->id;
@@ -44,7 +44,7 @@ void vcpu_arch_reset(struct vcpu *vcpu, vaddr_t entry)
     CSRW(CSR_HCOUNTEREN, HCOUNTEREN_TM);
     CSRW(CSR_HTIMEDELTA, 0);
     CSRW(CSR_VSSTATUS, SSTATUS_SD | SSTATUS_FS_DIRTY | SSTATUS_XS_DIRTY);
-    CSRW(CSR_HIE, 0);
+    CSRW(CSR_HIE, 0 | HIE_SGEIE);
     CSRW(CSR_VSTVEC, 0);
     CSRW(CSR_VSSCRATCH, 0);
     CSRW(CSR_VSEPC, 0);

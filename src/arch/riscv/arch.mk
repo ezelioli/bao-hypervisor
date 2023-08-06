@@ -4,7 +4,7 @@
 CROSS_COMPILE ?= riscv64-unknown-elf-
 
 arch-cppflags = 
-arch-cflags = -mcmodel=medany -march=rv64g -mstrict-align
+arch-cflags = -mcmodel=medany -march=rv64g_zifencei_zicsr -mstrict-align
 arch-asflags =
 arch-ldflags = 
 

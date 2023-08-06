@@ -9,6 +9,7 @@
 #include <bao.h>
 #include <arch/vplic.h>
 #include <arch/sbi.h>
+#include <arch/csrs.h>
 
 #define REG_RA (1)
 #define REG_SP (2)
@@ -44,6 +45,7 @@
 
 struct arch_vm_platform {
     paddr_t plic_base;
+    paddr_t clic_base;
 };
 
 struct vm_arch {

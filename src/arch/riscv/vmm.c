@@ -23,6 +23,8 @@ void vmm_arch_init()
     CSRW(CSR_HIDELEG, HIDELEG_VSSI | HIDELEG_VSTI | HIDELEG_VSEI);
     CSRW(CSR_HEDELEG, HEDELEG_ECU | HEDELEG_IPF | HEDELEG_LPF | HEDELEG_SPF);
 
+    CSRW(CSR_HGEIE, 0xfffffffffffffffful);
+
     /**
      * TODO: consider delegating other exceptions e.g. breakpoint or ins
      * misaligned

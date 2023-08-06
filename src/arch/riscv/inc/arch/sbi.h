@@ -91,4 +91,8 @@ struct sbiret sbi_hart_start(unsigned long hartid, unsigned long start_addr,
 struct sbiret sbi_hart_stop();
 struct sbiret sbi_hart_status(unsigned long hartid);
 
+struct sbiret sbi_clic_enable();
+struct sbiret sbi_clic_delegate(unsigned long irq_id);
+struct sbiret sbi_clic_get_num_sources();
+
 #endif /* __SBI_H__ */

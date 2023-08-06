@@ -207,6 +207,7 @@ static void vm_init_dev(struct vm* vm, const struct vm_config* config)
         }
 
         for (size_t j = 0; j < dev->interrupt_num; j++) {
+            // printk("[BAO] Assigning irq %d to VM\r\n", dev->interrupts[j]);
             interrupts_vm_assign(vm, dev->interrupts[j]);
         }
     }

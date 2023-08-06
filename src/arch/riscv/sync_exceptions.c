@@ -146,6 +146,11 @@ void sync_exception_handler()
     size_t pc_step = 0;
     unsigned long _scause = CSRR(scause);
 
+    // Remove extra CLIC info for now
+    _scause &= ((1UL << 63) | 0x0FFFUL);
+
+    // printk("[BAO] Exception: scause = 0x%lx\r\n", _scause);
+
     if(!(CSRR(CSR_HSTATUS) & HSTATUS_SPV)) {
         internal_exception_handler(&cpu()->vcpu->regs.x[0]);
     }

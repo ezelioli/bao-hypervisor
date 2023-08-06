@@ -10,6 +10,7 @@ cpu-objs-y+=mem.o
 cpu-objs-y+=vm.o
 cpu-objs-y+=vmm.o
 cpu-objs-y+=plic.o 
+cpu-objs-y+=clic.o 
 cpu-objs-y+=interrupts.o
 cpu-objs-y+=sync_exceptions.o
 cpu-objs-y+=vplic.o

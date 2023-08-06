@@ -32,6 +32,8 @@ void init(cpuid_t cpu_id, paddr_t load_addr)
 
     interrupts_init();
 
+    // sbi_set_timer(timer_get() + 25000000ull); // 1s
+
     vmm_init();
 
     /* Should never reach here */

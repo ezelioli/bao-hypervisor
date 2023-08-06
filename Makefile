@@ -22,11 +22,11 @@ objdump=	$(CROSS_COMPILE)objdump
 readelf=	$(CROSS_COMPILE)readelf
 size=		$(CROSS_COMPILE)size
 
-HOST_CC:=gcc
+HOST_CC:=gcc-11.2.0
 
 #Makefile arguments and default values
 DEBUG:=y
-OPTIMIZATIONS:=2
+OPTIMIZATIONS:=1
 CONFIG=
 PLATFORM=
 
@@ -262,6 +262,8 @@ $(platform_defs): $(platform_def_generator)
 	@echo "Generating header	$(patsubst $(cur_dir)/%, %, $@)"
 	@$(platform_def_generator) > $(platform_defs)
 
+info: $(objs-y)
+	@echo $(objs-y)
 
 #Generate directories for object, dependency and generated files
 

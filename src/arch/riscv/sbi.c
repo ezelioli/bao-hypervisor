@@ -10,6 +10,8 @@
 #include <bitmap.h>
 #include <fences.h>
 #include <hypercall.h>
+#include <interrupts.h>
+#include <printk.h>
 
 #define SBI_EXTID_BASE (0x10)
 #define SBI_GET_SBI_SPEC_VERSION_FID (0)
@@ -39,6 +41,11 @@
 #define SBI_REMOTE_HFENCE_GVMA_VMID_FID (4)
 #define SBI_REMOTE_HFENCE_VVMA_FID (5)
 #define SBI_REMOTE_HFENCE_VVMA_ASID_FID (6)
+
+#define SBI_EXTID_CLIC     (0x0A000000)
+#define SBI_EXT_CLIC_ENABLE_FID   (0x0)
+#define SBI_EXT_CLIC_DELEGATE_FID (0x1)
+#define SBI_EXT_CLIC_GET_NUMSRCS  (0x2)
 
 /**
  * For now we're defining bao specific ecalls, ie, hypercall, under the
@@ -191,11 +198,30 @@ struct sbiret sbi_hart_status(unsigned long hartid)
                      0, 0, 0, 0, 0);   
 }
 
+struct sbiret sbi_clic_enable()
+{
+    return sbi_ecall(SBI_EXTID_CLIC, SBI_EXT_CLIC_ENABLE_FID, 0,
+                    0, 0, 0, 0, 0);
+}
+
+struct sbiret sbi_clic_delegate(unsigned long irq_id)
+{
+    return sbi_ecall(SBI_EXTID_CLIC, SBI_EXT_CLIC_DELEGATE_FID, irq_id,
+                    0, 0, 0, 0, 0);
+}
+
+struct sbiret sbi_clic_get_num_sources()
+{
+    return sbi_ecall(SBI_EXTID_CLIC, SBI_EXT_CLIC_GET_NUMSRCS, 0,
+                    0, 0, 0, 0, 0);
+}
+
 static unsigned long ext_table[] = {SBI_EXTID_BASE,
                                     SBI_EXTID_TIME,
                                     SBI_EXTID_IPI,
                                     SBI_EXTID_RFNC,
-                                    SBI_EXTID_HSM};
+                                    SBI_EXTID_HSM,
+                                    SBI_EXTID_CLIC};
 
 static const size_t NUM_EXT = sizeof(ext_table) / sizeof(unsigned long);
 
@@ -240,8 +266,15 @@ struct sbiret sbi_time_handler(unsigned long fid)
 
 void sbi_timer_irq_handler()
 {
-    CSRS(CSR_HVIP, HIP_VSTIP);
-    CSRC(sie, SIE_STIE);
+    if (is_clic_mode()) {
+        // clic_set_pend(6, true); // VS timer interrupt (delegated to VS mode)
+        // clic_disable_interrupt(TIMR_INT_ID);
+        // printk("[BAO] Updating timer\r\n");
+        sbi_set_timer(timer_get() + 25000000ull); // 1s
+    } else {
+        CSRS(CSR_HVIP, HIP_VSTIP);
+        CSRC(sie, SIE_STIE);
+    }
 }
 
 struct sbiret sbi_ipi_handler(unsigned long fid)
@@ -419,6 +452,55 @@ struct sbiret sbi_bao_handler(unsigned long fid){
    return ret;
 }
 
+struct sbiret sbi_clic_handler(unsigned long fid){
+
+   struct sbiret ret;
+
+   uint64_t irq = vcpu_readreg(cpu()->vcpu, REG_A0);
+
+    switch(fid)
+    {
+        case SBI_EXT_CLIC_ENABLE_FID:
+            // TODO: decide how to handle this call
+            // should it even be allowed ?
+            ret = (struct sbiret) {.error = SBI_SUCCESS, .value = 0};
+            break;
+        case SBI_EXT_CLIC_DELEGATE_FID:
+            // TODO: decide how to handle this call
+            clic_intcfg_t cfg = clic_read_clicint(irq);
+            if (cfg.attr.mode == 0) { // CLIC_INT_ATTR_MODE_M   
+                // Forward SBI call to M-mode
+                // printk("[BAO] Interrupt in M mode, issuing call to OpenSBI\r\n");
+                ret = sbi_clic_delegate(irq);
+                if (ret.error != SBI_SUCCESS) {
+                    printk("[BAO] SBI ecall to sbi_clic_delegate failed (%d)\r\n", ret.error);
+                    break;
+                }
+            }
+            cfg = (clic_intcfg_t) {
+                .ip        = CLIC_IP_CLEAR,
+                .ie        = CLIC_IE_MASK,
+                .attr.shv  = CLIC_INT_ATTR_SHV_OFF,
+                .attr.trig = CLIC_INT_ATTR_TRIG_EDGE,
+                .attr.mode = CLIC_INT_ATTR_MODE_S,
+                .ctl       = 0x00
+            };
+            // printk("[BAO] Delegated irq %d to VM %d\r\n", irq, cpu()->vcpu->id);
+            clic_intvcfg_t vcfg = (clic_intvcfg_t) {
+                .v    = CLIC_V_ENABLE,
+                .vsid = cpu()->vcpu->id+1               // TODO: set VSID according to VM issuing call
+            };
+            clic_set_clicint(irq, cfg);
+            clic_set_clicintv(irq, vcfg);
+            break;
+        default:
+            ret = (struct sbiret) { .error = SBI_ERR_NOT_SUPPORTED, .value = 0 };
+            break;
+    }
+
+   return ret;
+}
+
 size_t sbi_vs_handler()
 {
     unsigned long extid = vcpu_readreg(cpu()->vcpu, REG_A7);
@@ -444,6 +526,9 @@ size_t sbi_vs_handler()
         case SBI_EXTID_BAO:
             ret = sbi_bao_handler(fid);
             break;
+        case SBI_EXTID_CLIC:
+            ret = sbi_clic_handler(fid);
+            break;
         default:
             WARNING("guest issued unsupport sbi extension call (%d)",
                     extid);
@@ -455,6 +540,18 @@ size_t sbi_vs_handler()
 
     return 4;
 }
+
+// uint64_t timer_get()
+// {
+//     uint64_t time;
+//     asm volatile("rdtime %0" : "=r"(time)); 
+//     return time;
+// }
+
+// void sbi_timer_irq_clic_handler()
+// {
+//     sbi_set_timer(timer_get() + 25000000ull); // 1s
+// }
 
 void sbi_init()
 {
@@ -471,6 +568,9 @@ void sbi_init()
         if (ret.error != SBI_SUCCESS || ret.value == 0) {
             ERROR("sbi does not support ext 0x%x", ext_table[i]);
         }
+        // } else {
+        //     printk("[BAO] SBI supports ext 0x%x\r\n", ext_table[i]);
+        // }
     }
 
     interrupts_reserve(TIMR_INT_ID, sbi_timer_irq_handler);

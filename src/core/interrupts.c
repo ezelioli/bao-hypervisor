@@ -54,7 +54,7 @@ static inline bool interrupt_is_reserved(irqid_t int_id)
 enum irq_res interrupts_handle(irqid_t int_id)
 {
     if (vm_has_interrupt(cpu()->vcpu->vm, int_id)) {
-        vcpu_inject_hw_irq(cpu()->vcpu, int_id);
+        vcpu_inject_hw_irq(cpu()->vcpu, int_id - CLIC_MAX_INTERRUPTS);
 
         return FORWARD_TO_VM;
 

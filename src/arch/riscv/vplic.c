@@ -11,6 +11,11 @@
 #include <interrupts.h>
 #include <arch/csrs.h>
 
+// #define MAX_PENDING_IRQS PLIC_MAX_INTERRUPTS
+// irqid_t pending_interrupts[MAX_PENDING_IRQS];
+// uint64_t first_pending;
+// uint64_t last_pending;
+
 static int vplic_vcntxt_to_pcntxt(struct vcpu *vcpu, int vcntxt_id)
 {
     struct plic_cntxt vcntxt = plic_plat_id_to_cntxt(vcntxt_id);
@@ -91,7 +96,9 @@ static irqid_t vplic_next_pending(struct vcpu *vcpu, int vcntxt)
     uint32_t max_prio = 0;
     irqid_t int_id = 0;
 
-    for (size_t i = 0; i <= PLIC_MAX_INTERRUPTS; i++) {
+    // return pending_interrupts[first_pending];
+
+    for (size_t i = 0; i <= PLIC_IMPL_INTERRUPTS; i++) {
         if (vplic_get_pend(vcpu, i) && !vplic_get_act(vcpu, i) && 
             vplic_get_enbl(vcpu, vcntxt, i)) {
 
@@ -197,6 +204,7 @@ static irqid_t vplic_claim(struct vcpu *vcpu, int vcntxt)
     spin_lock(&vcpu->vm->arch.vplic.lock);
     irqid_t int_id = vplic_next_pending(vcpu, vcntxt);
     bitmap_clear(vcpu->vm->arch.vplic.pend, int_id);
+    // first_pending = (first_pending + 1) % MAX_PENDING_IRQS;
     bitmap_set(vcpu->vm->arch.vplic.act, int_id);
     spin_unlock(&vcpu->vm->arch.vplic.lock);
 
@@ -221,8 +229,11 @@ void vplic_inject(struct vcpu *vcpu, irqid_t id)
 {
     struct vplic * vplic = &vcpu->vm->arch.vplic;
     spin_lock(&vplic->lock);
-    if (id > 0 && id <= PLIC_MAX_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
+    if (id > 0 && id <= PLIC_IMPL_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
         
+        // pending_interrupts[last_pending] = id;
+        // last_pending = (last_pending + 1) % MAX_PENDING_IRQS;
+
         bitmap_set(vplic->pend, id);
 
         if(vplic_get_hw(vcpu, id)) {
@@ -238,6 +249,8 @@ void vplic_inject(struct vcpu *vcpu, irqid_t id)
                 }
             }
         }
+    } else {
+        printk("[BAO] Cannot inject irq %d\r\n", id);
     }
     spin_unlock(&vplic->lock);
 }

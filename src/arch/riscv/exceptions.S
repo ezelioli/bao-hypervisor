@@ -115,7 +115,7 @@
     j   .
 .endm
 
-.balign 0x4
+.balign 0x100
 .global _hyp_trap_vector	
 _hyp_trap_vector:
     VM_EXIT
