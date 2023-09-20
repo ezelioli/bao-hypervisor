@@ -44,3 +44,9 @@ void console_write(char const* const str)
     uart_puts(uart, str);
     spin_unlock(&print_lock);
 }
+
+// void console_write_nolock(char const* const str)
+// {
+//     if (!ready) return;
+//     uart_puts(uart, str);
+// }

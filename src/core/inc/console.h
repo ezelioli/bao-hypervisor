@@ -10,5 +10,6 @@
 
 void console_init();
 void console_write(char const* const str);
+// void console_write_nolock(char const* const str);
 
 #endif /* __CONSOLE_H__ */

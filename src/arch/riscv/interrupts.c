@@ -57,7 +57,7 @@ void interrupts_arch_init()
     CSRS(sie, SIE_SEIE);
     /* If CLIC is present, enable Supervisor external interrupts (from PLIC) and timer interrupts */
     interrupts_arch_enable(TIMR_INT_ID, true);
-    interrupts_arch_enable(CLIC_MAX_INTERRUPTS + 1, true); // UART
+    // interrupts_arch_enable(CLIC_MAX_INTERRUPTS + 1, true); // UART
     // interrupts_arch_enable(CLIC_MAX_INTERRUPTS + 5, true);
     if ((void *) platform.arch.clic_base != NULL) {
         interrupts_arch_enable(TIMR_INT_ID, true);
@@ -122,12 +122,14 @@ void interrupts_arch_enable(irqid_t int_id, bool en)
 void interrupts_arch_clic_handle(unsigned long scause)
 {
     unsigned long int_id = scause & 0x0FFF;
+    // printk("[BAO] Irq %d\r\n");
     switch(int_id) {
         case EXTR_INT_ID:
             // printk("[BAO] External interrupt\r\n");
             plic_handle();
             break;
         default:
+            // printk("[BAO] Generic interrupt\r\n");
             interrupts_handle(int_id);
             break;
     }

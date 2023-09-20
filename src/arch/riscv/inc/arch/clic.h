@@ -27,14 +27,14 @@
 /* CLICINT registers */
 
 #define CLIC_CLICINT_IP_OFFSET                0
-#define CLIC_CLICINT_IE_OFFSET                7
+#define CLIC_CLICINT_IE_OFFSET                8
 #define CLIC_CLICINT_ATTR_SHV_OFFSET         16
 #define CLIC_CLICINT_ATTR_TRIG_OFFSET        17
 #define CLIC_CLICINT_ATTR_MODE_OFFSET        22
 #define CLIC_CLICINT_CTL_OFFSET              24
 
 #define CLIC_CLICINT_IP_MASK         0x00000001U
-#define CLIC_CLICINT_IE_MASK         0x00000080U
+#define CLIC_CLICINT_IE_MASK         0x00000100U
 #define CLIC_CLICINT_ATTR_SHV_MASK   0x00010000U
 #define CLIC_CLICINT_ATTR_TRIG_MASK  0x00060000U
 #define CLIC_CLICINT_ATTR_MODE_MASK  0x00C00000U
@@ -162,6 +162,7 @@ void clic_set_enable(uint32_t irq_id, bool en);
 void clic_set_priority(uint32_t irq_id, uint8_t prio);
 bool clic_get_pend(uint32_t irq_id);
 void clic_set_pend(uint32_t irq_id, bool pending);
+void clic_set_vsprio(uint32_t vsid, uint8_t prio);
 void clic_delegate_to_vm(uint32_t irq_id, unsigned long vm_id);
 
 #endif /* __CLIC_H__ */

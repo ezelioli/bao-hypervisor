@@ -9,7 +9,8 @@
 
 #define CLIC_CLICCFG_OFFSET          0x0008000ul
 #define CLIC_CLICINT_OFFSET(i)      (0x0009000ul + 4*(i))
-#define CLIC_CLICINTV_OFFSET(i)     (0x000d000ul + 4*(i))
+#define CLIC_CLICINTV_OFFSET(i)     ((0x000d000ul + (i)) & ~0x3UL)
+#define CLIC_VSPRIO_OFFSET(i)       (0x000e000ul + 1*(i))
 
 /*
 ** Global variables used to keep general information about the CLIC.
@@ -47,11 +48,25 @@ void clic_set_clicint(uint32_t irq_id, clic_intcfg_t cfg)
     write32(MAKE_CLICINT(cfg), (void *) ((uint64_t) clic_global + CLIC_CLICINT_OFFSET(irq_id)));
 }
 
+#define CLIC_INTV_OFFSET(i)         (((i) % 4)*8)
+#define CLIC_INTV_TOREG(i, cfg)        (((uint32_t) (cfg.v & 0x01) | ((cfg.vsid << 2) & 0xFC)) << CLIC_INTV_OFFSET(i))
+#define CLIC_INTV_MASK(i)           (0x000000FFU << CLIC_INTV_OFFSET(i))
+#define CLIC_INTV_MAKE(i, val, new) ((val & ~CLIC_INTV_MASK(i)) | (new & CLIC_INTV_MASK(i)))
+
 /* Sets the CLICINTV configuration register for interrupt `irq_id` */
 void clic_set_clicintv(uint32_t irq_id, clic_intvcfg_t cfg)
 {
-    write32(MAKE_CLICINTV(cfg), (void *) ((uint64_t) clic_global + CLIC_CLICINTV_OFFSET(irq_id)));
+    uint64_t addr = (uint64_t) clic_global + CLIC_CLICINTV_OFFSET(irq_id);
+    uint32_t val = read32((void *) addr);
+    uint32_t new = CLIC_INTV_TOREG(irq_id, cfg);
+    write32(CLIC_INTV_MAKE(irq_id, val, new), (void *) addr);
 }
+
+/* Sets the CLICINTV configuration register for interrupt `irq_id` */
+// void clic_set_clicintv(uint32_t irq_id, clic_intvcfg_t cfg)
+// {
+//     write32(MAKE_CLICINTV(cfg), (void *) ((uint64_t) clic_global + CLIC_CLICINTV_OFFSET(irq_id)));
+// }
 
 /* Reads the CLICINT configuration register for interrupt `irq_id`. Returns a `clic_intcfg_t` struct */
 clic_intcfg_t clic_read_clicint(uint32_t irq_id)
@@ -107,6 +122,20 @@ void clic_set_pend(uint32_t irq_id, bool pending)
     clic_intcfg_t intcfg = clic_read_clicint(irq_id);
     intcfg.ip = pending ? CLIC_IP_SET : CLIC_IP_CLEAR;
     clic_set_clicint(irq_id, intcfg);
+}
+
+void clic_set_vsprio(uint32_t vsid, uint8_t prio)
+{
+    if(vsid > 64){
+        printk("ERROR: CLIC supports up to 64 VSs\n");
+        return;
+    }
+    uint64_t addr = ((uint64_t) clic_global + CLIC_VSPRIO_OFFSET(vsid)) & ~0x3UL;
+    uint32_t val = read32((void *) addr);
+    uint32_t off = vsid % 4;
+    uint32_t mask = 0x000000ffU << off;
+    val = (val & ~mask) | ((prio << off) & mask);
+    write32(val, (void *) addr);
 }
 
 /* 

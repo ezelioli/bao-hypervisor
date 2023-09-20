@@ -7,13 +7,35 @@
 #define __ARCH_SPINLOCK__
 
 #include <bao.h>
+// #include <console.h>
 
 typedef volatile uint32_t __attribute__((aligned(4))) spinlock_t;
 
 #define SPINLOCK_INITVAL (0)
 
+// #define SINGLE_CORE
+
+// #ifdef SINGLE_CORE
+
+// static inline void spin_lock(spinlock_t* lock) {
+//     // unsigned long sstatus = CSRR(sstatus);
+//     // *lock = sstatus & SSTATUS_SIE_BIT;
+//     // CSRC(sstatus, SSTATUS_SIE_BIT);
+// }
+// static inline void spin_unlock(spinlock_t* lock) {
+//     // if(*lock != 0) {
+//     //     CSRS(sstatus, SSTATUS_SIE_BIT);
+//     //     *lock = 0;   
+//     // }
+// }
+
+// #else
+
 static inline void spin_lock(spinlock_t* lock)
 {
+    
+    // console_write_nolock("spin_lock\n");
+
     spinlock_t const ONE = 1;
     spinlock_t tmp = SPINLOCK_INITVAL;
 
@@ -28,9 +50,14 @@ static inline void spin_lock(spinlock_t* lock)
 
 static inline void spin_unlock(spinlock_t* lock)
 {
+
+    // console_write_nolock("spin_unlock\n");
+
     asm volatile("sw zero, %0\n\t"
                  "fence rw, rw\n\t"  // Is the full blown barrier really needed?
                  ::"m"(*lock) : "memory");
 }
+
+// #endif
 
 #endif /* __ARCH_SPINLOCK__ */

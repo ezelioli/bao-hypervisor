@@ -281,6 +281,8 @@ struct sbiret sbi_ipi_handler(unsigned long fid)
 {
     if (fid != SBI_SEND_IPI_FID) return (struct sbiret){SBI_ERR_NOT_SUPPORTED};
 
+    // printk("[BAO] Send IPI\r\n");
+
     unsigned long hart_mask = vcpu_readreg(cpu()->vcpu, REG_A0);
     unsigned long hart_mask_base = vcpu_readreg(cpu()->vcpu, REG_A1);
 
@@ -492,6 +494,9 @@ struct sbiret sbi_clic_handler(unsigned long fid){
             };
             clic_set_clicint(irq, cfg);
             clic_set_clicintv(irq, vcfg);
+            break;
+        case SBI_EXT_CLIC_GET_NUMSRCS:
+            ret = (struct sbiret) {.error = SBI_SUCCESS, .value = CLIC_IMPL_INTERRUPTS};
             break;
         default:
             ret = (struct sbiret) { .error = SBI_ERR_NOT_SUPPORTED, .value = 0 };

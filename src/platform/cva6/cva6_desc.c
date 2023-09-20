@@ -23,8 +23,8 @@ struct platform platform = {
     },
 
     .arch = {
-        .plic_base = 0xc000000
-        // .clic_base = 0x50000000
+        .plic_base = 0xc000000,
+        .clic_base = 0x50000000
     }
 
 };

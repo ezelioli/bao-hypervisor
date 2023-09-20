@@ -56,11 +56,11 @@ void cpu_init(cpuid_t cpu_id, paddr_t load_addr)
 
 void cpu_send_msg(cpuid_t trgtcpu, struct cpu_msg *msg)
 {
-    struct cpu_msg_node *node = objpool_alloc(&msg_pool);
-    if (node == NULL) ERROR("cant allocate msg node");
-    node->msg = *msg;
-    list_push(&cpu_if(trgtcpu)->event_list, (node_t *)node);
-    fence_sync_write();
+    // struct cpu_msg_node *node = objpool_alloc(&msg_pool);
+    // if (node == NULL) ERROR("cant allocate msg node");
+    // node->msg = *msg;
+    // list_push(&cpu_if(trgtcpu)->event_list, (node_t *)node);
+    // fence_sync_write();
     interrupts_cpu_sendipi(trgtcpu, IPI_CPU_MSG);
 }
 

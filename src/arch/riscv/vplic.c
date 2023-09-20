@@ -149,11 +149,11 @@ static void vplic_ipi_handler(uint32_t event, uint64_t data)
 static void vplic_set_threshold(struct vcpu* vcpu, int vcntxt, uint32_t threshold) 
 {
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    spin_lock(&vplic->lock);
+    // spin_lock(&vplic->lock);
     vplic->threshold[vcntxt] = threshold;
     int pcntxt = vplic_vcntxt_to_pcntxt(vcpu, vcntxt);
     plic_set_threshold(pcntxt, threshold);
-    spin_unlock(&vplic->lock);
+    // spin_unlock(&vplic->lock);
 
     vplic_update_hart_line(vcpu, vcntxt);
 }
@@ -161,7 +161,7 @@ static void vplic_set_threshold(struct vcpu* vcpu, int vcntxt, uint32_t threshol
 static void vplic_set_enbl(struct vcpu* vcpu, int vcntxt, irqid_t id, bool set)
 {
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    spin_lock(&vplic->lock);
+    // spin_lock(&vplic->lock);
     if (id <= PLIC_MAX_INTERRUPTS && vplic_get_enbl(vcpu, vcntxt, id) != set) {
         if(set){
             bitmap_set(vplic->enbl[vcntxt],id);
@@ -176,13 +176,13 @@ static void vplic_set_enbl(struct vcpu* vcpu, int vcntxt, irqid_t id, bool set)
             vplic_update_hart_line(vcpu, vcntxt);
         }
     }
-    spin_unlock(&vplic->lock);
+    // spin_unlock(&vplic->lock);
 }
 
 static void vplic_set_prio(struct vcpu *vcpu, irqid_t id, uint32_t prio)
 {
     struct vplic *vplic = &vcpu->vm->arch.vplic;
-    spin_lock(&vplic->lock);
+    // spin_lock(&vplic->lock);
     if (id <= PLIC_MAX_INTERRUPTS && vplic_get_prio(vcpu, id) != prio) {
         vplic->prio[id] = prio;
         if(vplic_get_hw(vcpu,id)){
@@ -196,17 +196,17 @@ static void vplic_set_prio(struct vcpu *vcpu, irqid_t id, uint32_t prio)
             }
         }
     }
-    spin_unlock(&vplic->lock);
+    // spin_unlock(&vplic->lock);
 }
 
 static irqid_t vplic_claim(struct vcpu *vcpu, int vcntxt)
 {
-    spin_lock(&vcpu->vm->arch.vplic.lock);
+    // spin_lock(&vcpu->vm->arch.vplic.lock);
     irqid_t int_id = vplic_next_pending(vcpu, vcntxt);
     bitmap_clear(vcpu->vm->arch.vplic.pend, int_id);
     // first_pending = (first_pending + 1) % MAX_PENDING_IRQS;
     bitmap_set(vcpu->vm->arch.vplic.act, int_id);
-    spin_unlock(&vcpu->vm->arch.vplic.lock);
+    // spin_unlock(&vcpu->vm->arch.vplic.lock);
 
     vplic_update_hart_line(vcpu, vcntxt);
     return int_id;
@@ -218,9 +218,9 @@ static void vplic_complete(struct vcpu *vcpu, int vcntxt, irqid_t int_id)
         plic_hart[cpu()->arch.plic_cntxt].complete = int_id;
     }
 
-    spin_lock(&vcpu->vm->arch.vplic.lock);
+    // spin_lock(&vcpu->vm->arch.vplic.lock);
     bitmap_clear(vcpu->vm->arch.vplic.act, int_id);
-    spin_unlock(&vcpu->vm->arch.vplic.lock);
+    // spin_unlock(&vcpu->vm->arch.vplic.lock);
 
     vplic_update_hart_line(vcpu, vcntxt);
 }
@@ -228,7 +228,7 @@ static void vplic_complete(struct vcpu *vcpu, int vcntxt, irqid_t int_id)
 void vplic_inject(struct vcpu *vcpu, irqid_t id)
 {
     struct vplic * vplic = &vcpu->vm->arch.vplic;
-    spin_lock(&vplic->lock);
+    // spin_lock(&vplic->lock);
     if (id > 0 && id <= PLIC_IMPL_INTERRUPTS && !vplic_get_pend(vcpu, id)) {
         
         // pending_interrupts[last_pending] = id;
@@ -252,7 +252,7 @@ void vplic_inject(struct vcpu *vcpu, irqid_t id)
     } else {
         printk("[BAO] Cannot inject irq %d\r\n", id);
     }
-    spin_unlock(&vplic->lock);
+    // spin_unlock(&vplic->lock);
 }
 
 static void vplic_emul_prio_access(struct emul_access *acc)
